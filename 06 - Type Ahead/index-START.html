@@ -1,22 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Type Ahead 👀</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Type Ahead 👀</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-  <form class="search-form">
-    <input type="text" class="search" placeholder="City or State">
-    <ul class="suggestions">
-      <li>Filter for a city</li>
-      <li>or a state</li>
-    </ul>
-  </form>
-<script>
-const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+  <body>
+    <form class="search-form js-search-form">
+      <input type="text" class="search" placeholder="City or State" />
+      <ul class="suggestions js-suggestions"></ul>
+    </form>
+    <script>
+      const endpoint =
+        "https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json"
 
-</script>
-</body>
+      // START Helpers
+
+      function delay(fn, ms) {
+        let timer = 0
+        return function (...args) {
+          clearTimeout(timer)
+          timer = setTimeout(fn.bind(this, ...args), ms || 0)
+        }
+      }
+
+      const checkIncludes = (a, b) => a.toLowerCase().includes(b)
+
+      // END Helpers
+
+      async function getData() {
+        const res = await fetch(endpoint)
+        return await res.json()
+      }
+
+      function generateStates(data) {
+        const suggestionsWrapper = document.querySelector(".js-suggestions")
+        const formatPopulation = (population) =>
+          parseInt(population).toLocaleString()
+
+        suggestionsWrapper.innerHTML = ""
+        data.map((item) => {
+          const stateHTML = `
+        <li>${item.city}, ${item.state}
+          <span class="population">${formatPopulation(item.population)}</span>
+        </li>
+      `
+          suggestionsWrapper.insertAdjacentHTML("beforeend", stateHTML)
+        })
+      }
+
+      function listenSearch(e, data) {
+        e.preventDefault()
+        const value = e.target.value.toLowerCase()
+
+        const filteredData = data.filter(
+          ({ city, state }) =>
+            checkIncludes(city, value) || checkIncludes(state, value)
+        )
+        console.log(filteredData)
+        generateStates(filteredData)
+      }
+
+      async function startAplication() {
+        const data = await getData()
+        generateStates(data)
+        document.querySelector(".js-search-form").addEventListener(
+          "keyup",
+          delay((e) => listenSearch(e, data), 300)
+        )
+        console.log(data)
+      }
+
+      startAplication()
+    </script>
+  </body>
 </html>
